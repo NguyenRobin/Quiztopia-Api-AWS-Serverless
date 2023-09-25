@@ -4,7 +4,59 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: nodejs18.x
+  profile: ${env:PROFILE}
+  region: ${env:AWS_REGION}
+  iam:
+    role: ${env:LAMBDA_ROLE}
+
+useDotenv: true
+
+plugins:
+  - serverless-webpack
+
+package:
+  individually: true
 
 functions:
-  function1:
-    handler: index.handler
+  signup:
+    handler: src/functions/signup/index.handler
+    events:
+      - httpApi:
+          path: '/api/user/signup'
+          method: POST
+  login:
+    handler: src/functions/login/index.handler
+    events:
+      - httpApi:
+          path: '/api/user/login'
+          method: POST
+  getAllQuiz:
+    handler: src/functions/getAllQuiz/index.handler
+    events:
+      - httpApi:
+          path: '/api/quiz'
+          method: GET
+  getQuiz:
+    handler: src/functions/getQuiz/index.handler
+    events:
+      - httpApi:
+          path: '/api/quiz/{id}'
+          method: GET
+
+resources:
+  Resources:
+    Quiztopia:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: Quiztopia
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+        BillingMode: PAY_PER_REQUEST

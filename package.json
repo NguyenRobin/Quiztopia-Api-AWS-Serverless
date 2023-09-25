@@ -1,0 +1,14 @@
+{
+  "devDependencies": {
+    "serverless-webpack": "^5.13.0",
+    "ts-loader": "^9.4.4",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.418.0",
+    "@middy/core": "^4.6.4",
+    "@types/aws-lambda": "^8.10.122",
+    "aws-sdk": "^2.1463.0",
+    "dotenv": "^16.3.1"
+  }
+}
