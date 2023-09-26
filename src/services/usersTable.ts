@@ -1,4 +1,4 @@
-import { PutItemCommand } from '@aws-sdk/client-dynamodb';
+import { PutItemCommand, QueryCommand } from '@aws-sdk/client-dynamodb';
 import { sendErrorResponse } from '../responses';
 import { db } from './db';
 import { SignupUser } from '../interfaces/users';
@@ -27,5 +27,34 @@ export async function signupUser(user: SignupUser) {
     } else {
       return sendErrorResponse(error);
     }
+  }
+}
+
+export async function login(email: string, password: string) {
+  const command = new QueryCommand({
+    TableName: 'Quiztopia',
+    KeyConditionExpression: 'PK = :requestPK AND SK = :requestSK',
+    ExpressionAttributeValues: {
+      ':requestPK': { S: 'u#' + email },
+      ':requestSK': { S: 'u#' + email },
+    },
+  });
+
+  try {
+    const { Items: user } = await db.send(command);
+
+    if (!user || !user.length) {
+      throw { statusCode: 401, message: 'Email not found!' };
+    }
+
+    if (password !== user?.at?.(0)?.Password.S) {
+      throw {
+        statusCode: 401,
+        message: 'Passwords credentials are not matching',
+      };
+    }
+    return user;
+  } catch (error) {
+    throw error;
   }
 }

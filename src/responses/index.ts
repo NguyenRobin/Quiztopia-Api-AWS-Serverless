@@ -1,3 +1,4 @@
+//sendSuccessResponse
 export function sendResponse(statusCode: number, message: string) {
   return {
     statusCode,
@@ -15,5 +16,15 @@ export function sendErrorResponse(error: any) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ message: error.message }),
+  };
+}
+
+export function sendBodyResponse(statusCode: number, body: {}) {
+  return {
+    statusCode,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ success: true, ...body }),
   };
 }

@@ -19,29 +19,35 @@ package:
 
 functions:
   signup:
-    handler: src/functions/signup/index.handler
+    handler: src/functions/public/signup/index.handler
     events:
       - httpApi:
           path: '/api/user/signup'
           method: POST
   login:
-    handler: src/functions/login/index.handler
+    handler: src/functions/public/login/index.handler
     events:
       - httpApi:
           path: '/api/user/login'
           method: POST
   getAllQuiz:
-    handler: src/functions/getAllQuiz/index.handler
+    handler: src/functions/public/getAllQuiz/index.handler
     events:
       - httpApi:
           path: '/api/quiz'
           method: GET
   getQuiz:
-    handler: src/functions/getQuiz/index.handler
+    handler: src/functions/public/getQuiz/index.handler
     events:
       - httpApi:
           path: '/api/quiz/{id}'
           method: GET
+  createQuiz:
+    handler: src/functions/authentication/createQuiz/index.handler
+    events:
+      - httpApi:
+          path: '/api/quiz'
+          method: POST
 
 resources:
   Resources:
