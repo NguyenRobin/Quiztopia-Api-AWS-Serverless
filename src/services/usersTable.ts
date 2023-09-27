@@ -7,8 +7,8 @@ export async function signupUser(user: SignupUser) {
   const command = new PutItemCommand({
     TableName: 'Quiztopia',
     Item: {
-      PK: { S: 'u#' + user.pk },
-      SK: { S: 'u#' + user.sk },
+      PK: { S: 'user#' + user.pk },
+      SK: { S: 'user#' + user.sk },
       EntityType: { S: user.entityType },
       Email: { S: user.email },
       Password: { S: user.password },
@@ -35,8 +35,8 @@ export async function login(email: string, password: string) {
     TableName: 'Quiztopia',
     KeyConditionExpression: 'PK = :requestPK AND SK = :requestSK',
     ExpressionAttributeValues: {
-      ':requestPK': { S: 'u#' + email },
-      ':requestSK': { S: 'u#' + email },
+      ':requestPK': { S: 'user#' + email },
+      ':requestSK': { S: 'user#' + email },
     },
   });
 
