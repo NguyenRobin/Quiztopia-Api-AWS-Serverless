@@ -29,6 +29,71 @@ interface Quiz {
   modified?: string;
 }
 
+async function createQuiz(quiz: Quiz) {
+  const command = new PutItemCommand({
+    TableName: 'Quiztopia',
+    Item: {
+      PK: { S: 'quiz#' + quiz.pk },
+      SK: { S: 'id#' + quiz.sk },
+      EntityType: { S: quiz.entityType },
+      QuizName: { S: quiz.quizName },
+      Questions: {
+        L: quiz.questions.map((question) => ({
+          M: {
+            Question: { S: question.question },
+            Answer: { S: question.answer },
+            Coordinates: {
+              M: {
+                Latitude: { S: question.coordinates.latitude },
+                Longitude: { S: question.coordinates.longitude },
+              },
+            },
+          },
+        })),
+      },
+      Id: { S: quiz.id },
+      Creator: { S: quiz.creator },
+      CreatedAt: { S: quiz.createdAt },
+    },
+  });
+  try {
+    const response = await db.send(command);
+    console.log('response', response);
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function lambda(event: APIGatewayProxyEvent) {
+  try {
+    const { quizName, questions } = event.body as any;
+
+    const token = getToken(event);
+    const tokenOwner = await getTokenOwner(token!);
+    const quizId = randomUUID();
+
+    const quiz: Quiz = {
+      pk: quizName,
+      sk: quizId,
+      entityType: 'quiz',
+      quizName,
+      questions,
+      id: quizId,
+      createdAt: generateDate(),
+      creator: tokenOwner.email,
+    };
+
+    await createQuiz(quiz);
+
+    return sendBodyResponse(200, { token, tokenOwner, quiz });
+  } catch (error: any) {
+    console.error(error);
+    return sendErrorResponse(error);
+  }
+}
+
+export const handler = middy(lambda).use(jsonBodyParser());
+
 // async function createQuiz(quiz: Quiz) {
 //   const userQuiz = {
 //     PK: { S: 'user#' + quiz.pk },
@@ -101,68 +166,3 @@ interface Quiz {
 //     throw error;
 //   }
 // }
-
-async function createQuiz(quiz: Quiz) {
-  const command = new PutItemCommand({
-    TableName: 'Quiztopia',
-    Item: {
-      PK: { S: 'quiz#' + quiz.pk },
-      SK: { S: 'id#' + quiz.sk },
-      EntityType: { S: quiz.entityType },
-      QuizName: { S: quiz.quizName },
-      Questions: {
-        L: quiz.questions.map((question) => ({
-          M: {
-            Question: { S: question.question },
-            Answer: { S: question.answer },
-            Coordinates: {
-              M: {
-                Latitude: { S: question.coordinates.latitude },
-                Longitude: { S: question.coordinates.longitude },
-              },
-            },
-          },
-        })),
-      },
-      Id: { S: quiz.id },
-      Creator: { S: quiz.creator },
-      CreatedAt: { S: quiz.createdAt },
-    },
-  });
-  try {
-    const response = await db.send(command);
-    console.log('response', response);
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function lambda(event: APIGatewayProxyEvent) {
-  try {
-    const { quizName, questions } = event.body as any;
-
-    const token = getToken(event);
-    const tokenOwner = await getTokenOwner(token!);
-    const quizId = randomUUID();
-
-    const quiz: Quiz = {
-      pk: quizName,
-      sk: quizId,
-      entityType: 'quiz',
-      quizName,
-      questions,
-      id: quizId,
-      createdAt: generateDate(),
-      creator: tokenOwner.email,
-    };
-
-    await createQuiz(quiz);
-
-    return sendBodyResponse(200, { token, tokenOwner, quiz });
-  } catch (error: any) {
-    console.error(error);
-    return sendErrorResponse(error);
-  }
-}
-
-export const handler = middy(lambda).use(jsonBodyParser());
