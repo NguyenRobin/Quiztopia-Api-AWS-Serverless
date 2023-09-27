@@ -22,7 +22,7 @@ async function lambdaHandler(event: APIGatewayProxyEvent) {
         const user: SignupUser = {
           pk: email,
           sk: email,
-          entityType: 'users',
+          entityType: 'user',
           email,
           password,
           createdAt: generateDate(),
