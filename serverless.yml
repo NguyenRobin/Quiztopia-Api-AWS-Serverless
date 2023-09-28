@@ -52,8 +52,8 @@ functions:
     handler: src/functions/authentication/addQuestionToQuiz/index.handler
     events:
       - httpApi:
-          path: '/api/quiz'
-          method: POST
+          path: '/api/quiz/{id}'
+          method: PATCH
 
 resources:
   Resources:
