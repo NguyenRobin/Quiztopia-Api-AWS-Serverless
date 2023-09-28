@@ -54,6 +54,12 @@ functions:
       - httpApi:
           path: '/api/quiz/{id}'
           method: PATCH
+  deleteQuiz:
+    handler: src/functions/authentication/deleteQuiz/index.handler
+    events:
+      - httpApi:
+          path: '/api/quiz/{id}'
+          method: DELETE
 
 resources:
   Resources:

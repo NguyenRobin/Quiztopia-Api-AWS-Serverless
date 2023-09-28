@@ -6,10 +6,7 @@ import {
   sendErrorResponse,
   sendResponse,
 } from '../../../responses';
-import {
-  BatchWriteItemCommand,
-  PutItemCommand,
-} from '@aws-sdk/client-dynamodb';
+import { BatchWriteItemCommand } from '@aws-sdk/client-dynamodb';
 import { db } from '../../../services/db';
 import { generateDate } from '../../../utils/generateDate';
 import { randomUUID } from 'crypto';

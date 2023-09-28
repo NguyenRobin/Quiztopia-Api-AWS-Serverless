@@ -60,7 +60,7 @@ export async function getQuizName(email: string, quizId: string) {
     if (!Items || !Items.length) {
       throw {
         statusCode: 401,
-        message: 'Access denied! You cannot access other users quiz.',
+        message: 'Authentication failed You cannot access this quiz.',
       };
     }
     return Items?.at(0)?.QuizName.S;
