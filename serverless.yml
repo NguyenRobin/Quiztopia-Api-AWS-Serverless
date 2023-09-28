@@ -48,6 +48,12 @@ functions:
       - httpApi:
           path: '/api/quiz'
           method: POST
+  addQuestionToQuiz:
+    handler: src/functions/authentication/addQuestionToQuiz/index.handler
+    events:
+      - httpApi:
+          path: '/api/quiz'
+          method: POST
 
 resources:
   Resources:

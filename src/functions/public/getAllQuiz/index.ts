@@ -20,6 +20,7 @@ export async function getAllQuiz() {
     const quizTopics = Items?.map((quiz) => {
       console.log(quiz);
       return {
+        id: quiz.Id.S,
         quiz: quiz.QuizName.S,
         creator: quiz.Creator.S,
         questions: quiz?.Questions?.L?.map((item) => {

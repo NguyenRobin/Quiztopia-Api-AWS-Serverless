@@ -1,7 +1,11 @@
 import middy from '@middy/core';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { getToken, getTokenOwner } from '../../../jwt';
-import { sendBodyResponse, sendErrorResponse } from '../../../responses';
+import {
+  sendBodyResponse,
+  sendErrorResponse,
+  sendResponse,
+} from '../../../responses';
 import {
   BatchWriteItemCommand,
   PutItemCommand,
@@ -10,6 +14,89 @@ import { db } from '../../../services/db';
 import { generateDate } from '../../../utils/generateDate';
 import { randomUUID } from 'crypto';
 import jsonBodyParser from '@middy/http-json-body-parser';
+
+// interface Quiz {
+//   pk: string;
+//   sk: string;
+//   entityType: string;
+//   id: string;
+//   quizName: string;
+//   questions: [
+//     {
+//       question: string;
+//       answer: string;
+//       coordinates: { latitude: string; longitude: string };
+//     }
+//   ];
+//   createdAt: string;
+//   creator: string;
+//   modified?: string;
+// }
+
+// async function createQuiz(quiz: Quiz) {
+//   const command = new PutItemCommand({
+//     TableName: 'Quiztopia',
+//     Item: {
+//       PK: { S: 'quiz#' + quiz.pk },
+//       SK: { S: 'id#' + quiz.sk },
+//       EntityType: { S: quiz.entityType },
+//       QuizName: { S: quiz.quizName },
+//       Questions: {
+//         L: quiz.questions.map((question) => ({
+//           M: {
+//             Question: { S: question.question },
+//             Answer: { S: question.answer },
+//             Coordinates: {
+//               M: {
+//                 Latitude: { S: question.coordinates.latitude },
+//                 Longitude: { S: question.coordinates.longitude },
+//               },
+//             },
+//           },
+//         })),
+//       },
+//       Id: { S: quiz.id },
+//       Creator: { S: quiz.creator },
+//       CreatedAt: { S: quiz.createdAt },
+//     },
+//   });
+//   try {
+//     const response = await db.send(command);
+//     console.log('response', response);
+//   } catch (error) {
+//     throw error;
+//   }
+// }
+
+// async function lambda(event: APIGatewayProxyEvent) {
+//   try {
+//     const { quizName, questions } = event.body as any;
+
+//     const token = getToken(event);
+//     const tokenOwner = await getTokenOwner(token!);
+//     const quizId = randomUUID();
+
+//     const quiz: Quiz = {
+//       pk: quizName,
+//       sk: quizId,
+//       entityType: 'quiz',
+//       quizName,
+//       questions,
+//       id: quizId,
+//       createdAt: generateDate(),
+//       creator: tokenOwner.email,
+//     };
+
+//     await createQuiz(quiz);
+
+//     return sendBodyResponse(200, { token, tokenOwner, quiz });
+//   } catch (error: any) {
+//     console.error(error);
+//     return sendErrorResponse(error);
+//   }
+// }
+
+// export const handler = middy(lambda).use(jsonBodyParser());
 
 interface Quiz {
   pk: string;
@@ -28,38 +115,68 @@ interface Quiz {
   creator: string;
   modified?: string;
 }
-
-async function createQuiz(quiz: Quiz) {
-  const command = new PutItemCommand({
-    TableName: 'Quiztopia',
-    Item: {
-      PK: { S: 'quiz#' + quiz.pk },
-      SK: { S: 'id#' + quiz.sk },
-      EntityType: { S: quiz.entityType },
-      QuizName: { S: quiz.quizName },
-      Questions: {
-        L: quiz.questions.map((question) => ({
-          M: {
-            Question: { S: question.question },
-            Answer: { S: question.answer },
-            Coordinates: {
-              M: {
-                Latitude: { S: question.coordinates.latitude },
-                Longitude: { S: question.coordinates.longitude },
-              },
+async function createQuiz(quiz: Quiz, madeBy: Quiz) {
+  const userQuiz = {
+    PK: { S: 'quiz#' + quiz.pk },
+    SK: { S: 'id#' + quiz.id },
+    EntityType: { S: 'quiz' },
+    QuizName: { S: quiz.quizName },
+    Questions: {
+      L: quiz.questions.map((question) => ({
+        M: {
+          Question: { S: question.question },
+          Answer: { S: question.answer },
+          Coordinates: {
+            M: {
+              Latitude: { S: question.coordinates.latitude },
+              Longitude: { S: question.coordinates.longitude },
             },
           },
-        })),
-      },
-      Id: { S: quiz.id },
-      Creator: { S: quiz.creator },
-      CreatedAt: { S: quiz.createdAt },
+        },
+      })),
+    },
+    Id: { S: quiz.id },
+    CreatedAt: { S: generateDate() },
+    Creator: { S: quiz.creator },
+  };
+
+  const type = {
+    PK: { S: 'user#' + madeBy.pk },
+    SK: { S: 'id#' + madeBy.id },
+    EntityType: { S: 'quiz' },
+    QuizName: { S: madeBy.quizName },
+    Questions: {
+      L: madeBy.questions.map((question) => ({
+        M: {
+          Question: { S: question.question },
+          Answer: { S: question.answer },
+          Coordinates: {
+            M: {
+              Latitude: { S: question.coordinates.latitude },
+              Longitude: { S: question.coordinates.longitude },
+            },
+          },
+        },
+      })),
+    },
+    Id: { S: madeBy.id },
+    CreatedAt: { S: generateDate() },
+    Creator: { S: madeBy.creator },
+  };
+  const command = new BatchWriteItemCommand({
+    RequestItems: {
+      Quiztopia: [
+        { PutRequest: { Item: userQuiz } },
+        { PutRequest: { Item: type } },
+      ],
     },
   });
+
   try {
     const response = await db.send(command);
-    console.log('response', response);
+    return response;
   } catch (error) {
+    console.log(error);
     throw error;
   }
 }
@@ -72,7 +189,7 @@ async function lambda(event: APIGatewayProxyEvent) {
     const tokenOwner = await getTokenOwner(token!);
     const quizId = randomUUID();
 
-    const quiz: Quiz = {
+    const quizTopic: Quiz = {
       pk: quizName,
       sk: quizId,
       entityType: 'quiz',
@@ -83,9 +200,20 @@ async function lambda(event: APIGatewayProxyEvent) {
       creator: tokenOwner.email,
     };
 
-    await createQuiz(quiz);
+    const quizMadeBy: Quiz = {
+      pk: tokenOwner.email,
+      sk: quizId,
+      entityType: 'quiz',
+      quizName,
+      questions,
+      id: quizId,
+      createdAt: generateDate(),
+      creator: tokenOwner.email,
+    };
 
-    return sendBodyResponse(200, { token, tokenOwner, quiz });
+    const result = await createQuiz(quizTopic, quizMadeBy);
+
+    return sendResponse(201, 'Quiz successfully created');
   } catch (error: any) {
     console.error(error);
     return sendErrorResponse(error);
@@ -93,76 +221,3 @@ async function lambda(event: APIGatewayProxyEvent) {
 }
 
 export const handler = middy(lambda).use(jsonBodyParser());
-
-// async function createQuiz(quiz: Quiz) {
-//   const userQuiz = {
-//     PK: { S: 'user#' + quiz.pk },
-//     SK: { S: 'quiz#' + quiz.sk },
-//     EntityType: { S: 'quiz' },
-//     QuizName: { S: quiz.quizName },
-//     Questions: {
-//       L: [
-//         {
-//           // Question: { S: quiz.questions[0].question },
-//           // Answer: { S: quiz.questions[0].answer },
-//           // Coordinates: {
-//           //   latitude: { S: quiz.questions[0].coordinates.latitude },
-//           //   longitude: { S: quiz.questions[0].coordinates.longitude },
-//           // },
-//         },
-//       ],
-//     },
-//     Id: { S: 'quiz#' + quiz.id },
-//     CreatedAt: { S: generateDate() },
-//     Creator: { S: quiz.creator },
-//   };
-// const userQuiz = {
-//   PK: { S: 'user#' + quiz.pk },
-//   SK: { S: 'quiz#' + quiz.sk },
-//   EntityType: { S: 'quiz' },
-//   QuizName: { S: quiz.quizName },
-//   Coordinates: {
-//     M: {
-//       latitude: { S: quiz.coordinates?.latitude },
-//       longitude: { S: quiz.coordinates?.longitude },
-//     },
-//   },
-//   Id: { S: 'quiz#' + quiz.id },
-//   CreatedAt: { S: generateDate() },
-//   Creator: { S: quiz.creator },
-// };
-
-// const newQuiz = {
-//   PK: { S: 'quizCategory#' + test.quizName },
-//   SK: { S: 'quiz#' + test.id },
-//   EntityType: { S: 'quizCategory' },
-//   QuizName: { S: test.quizName },
-//   Question: { S: test.question },
-//   Answer: { S: test.answer },
-//   Coordinates: {
-//     M: {
-//       latitude: { S: test.coordinates?.latitude },
-//       longitude: { S: test.coordinates?.longitude },
-//     },
-//   },
-//   CreatedAt: { S: generateDate() },
-//   Creator: { S: test.creator },
-// };
-
-//   const command = new BatchWriteItemCommand({
-//     RequestItems: {
-//       Quiztopia: [
-//         // { PutRequest: { Item: userQuiz } },
-//         // { PutRequest: { Item: newQuiz } },
-//       ],
-//     },
-//   });
-
-//   try {
-//     const response = await db.send(command);
-//     return response;
-//   } catch (error) {
-//     console.log(error);
-//     throw error;
-//   }
-// }
