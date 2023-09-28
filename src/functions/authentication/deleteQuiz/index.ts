@@ -26,7 +26,7 @@ export async function deleteQuiz(
         },
         {
           DeleteRequest: {
-            Key: createKeyCondition('quiz', quizName, 'id', quizId),
+            Key: createKeyCondition('id', quizId, 'quiz', quizName),
           },
         },
       ],
