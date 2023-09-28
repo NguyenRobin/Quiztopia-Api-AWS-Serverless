@@ -114,8 +114,8 @@ interface Quiz {
 }
 async function createQuiz(quiz: Quiz, madeBy: Quiz) {
   const userQuiz = {
-    PK: { S: 'quiz#' + quiz.pk },
-    SK: { S: 'id#' + quiz.id },
+    PK: { S: 'id#' + quiz.pk },
+    SK: { S: 'quiz#' + quiz.quizName },
     EntityType: { S: 'quiz' },
     QuizName: { S: quiz.quizName },
     Questions: {
@@ -187,8 +187,8 @@ async function lambda(event: APIGatewayProxyEvent) {
     const quizId = randomUUID();
 
     const quizTopic: Quiz = {
-      pk: quizName,
-      sk: quizId,
+      pk: quizId,
+      sk: quizName,
       entityType: 'quiz',
       quizName,
       questions,
