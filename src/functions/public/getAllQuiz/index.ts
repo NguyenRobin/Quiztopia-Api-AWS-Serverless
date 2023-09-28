@@ -9,8 +9,8 @@ export async function getAllQuiz() {
     TableName: 'Quiztopia',
     FilterExpression: 'begins_with(PK, :PK) and begins_with(SK, :SK)',
     ExpressionAttributeValues: {
-      ':PK': { S: 'quiz#' },
-      ':SK': { S: 'id#' },
+      ':PK': { S: 'id#' },
+      ':SK': { S: 'quiz#' },
     },
   });
 

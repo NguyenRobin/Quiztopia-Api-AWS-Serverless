@@ -12,10 +12,10 @@ import {
 export async function getQuiz(id: any) {
   const command = new ScanCommand({
     TableName: 'Quiztopia',
-    FilterExpression: 'begins_with(PK, :PK) AND SK = :SK',
+    FilterExpression: 'PK = :PK AND begins_with(SK, :SK)',
     ExpressionAttributeValues: {
-      ':PK': { S: 'quiz#' },
-      ':SK': { S: 'id#' + id },
+      ':PK': { S: 'id#' + id },
+      ':SK': { S: 'quiz#' },
     },
     ProjectionExpression: 'QuizName, Creator, Questions',
   });
@@ -84,7 +84,7 @@ export async function addQuestionToQuiz(
 
   const commandUpdateQuizItem = new UpdateItemCommand({
     TableName: 'Quiztopia',
-    Key: createKeyCondition('quiz', quizName, 'id', quizId),
+    Key: createKeyCondition('id', quizId, 'quiz', quizName),
     UpdateExpression: 'SET Questions = list_append(Questions, :question)',
     ExpressionAttributeValues: createAttributeExpression(question),
   });
