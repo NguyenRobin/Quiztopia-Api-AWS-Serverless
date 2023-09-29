@@ -60,6 +60,18 @@ functions:
       - httpApi:
           path: '/api/quiz/{id}'
           method: DELETE
+  addScore:
+    handler: src/functions/public/addScore/index.handler
+    events:
+      - httpApi:
+          path: '/api/quiz/score'
+          method: POST
+  getTopScorers:
+    handler: src/functions/public/getTopScorers/index.handler
+    events:
+      - httpApi:
+          path: '/api/quiz/score/{id}'
+          method: GET
 
 resources:
   Resources:

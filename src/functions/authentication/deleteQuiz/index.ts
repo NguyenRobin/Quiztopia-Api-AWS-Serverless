@@ -1,7 +1,4 @@
-import {
-  BatchWriteItemCommand,
-  DeleteItemCommand,
-} from '@aws-sdk/client-dynamodb';
+import { BatchWriteItemCommand } from '@aws-sdk/client-dynamodb';
 import middy from '@middy/core';
 import jsonBodyParser from '@middy/http-json-body-parser';
 import { APIGatewayProxyEvent } from 'aws-lambda';

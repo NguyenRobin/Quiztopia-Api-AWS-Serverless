@@ -19,3 +19,10 @@ export interface UserCredentials {
   email: string;
   password: string;
 }
+
+export interface UserScore {
+  quizId: string;
+  user: string;
+  score: number;
+  entityType: string;
+}
