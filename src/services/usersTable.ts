@@ -33,10 +33,10 @@ export async function signupUser(user: SignupUser) {
 export async function login(email: string, password: string) {
   const command = new QueryCommand({
     TableName: 'Quiztopia',
-    KeyConditionExpression: 'PK = :requestPK AND SK = :requestSK',
+    KeyConditionExpression: 'PK = :PK AND SK = :SK',
     ExpressionAttributeValues: {
-      ':requestPK': { S: 'user#' + email },
-      ':requestSK': { S: 'user#' + email },
+      ':PK': { S: 'user#' + email },
+      ':SK': { S: 'user#' + email },
     },
   });
 
@@ -54,6 +54,32 @@ export async function login(email: string, password: string) {
       };
     }
     return user;
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function userIsRegistered(email: string) {
+  const command = new QueryCommand({
+    TableName: 'Quiztopia',
+    KeyConditionExpression: 'PK = :PK AND SK = :SK',
+    ExpressionAttributeValues: {
+      ':PK': { S: 'user#' + email },
+      ':SK': { S: 'user#' + email },
+    },
+  });
+
+  try {
+    const { Items } = await db.send(command);
+
+    if (!Items || !Items.length) {
+      throw {
+        statusCode: 401,
+        message:
+          'Authentication failed! To create a quiz you must be logged in.',
+      };
+    }
+    return true;
   } catch (error) {
     throw error;
   }

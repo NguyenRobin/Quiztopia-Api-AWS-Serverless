@@ -95,10 +95,10 @@ export async function getAllQuiz() {
 export async function getQuizName(email: string, quizId: string) {
   const command = new QueryCommand({
     TableName: 'Quiztopia',
-    KeyConditionExpression: 'PK = :email AND SK = :quizId',
+    KeyConditionExpression: 'PK = :PK AND SK = :SK',
     ExpressionAttributeValues: {
-      ':email': { S: 'user#' + email },
-      ':quizId': { S: 'id#' + quizId },
+      ':PK': { S: 'user#' + email },
+      ':SK': { S: 'id#' + quizId },
     },
     ProjectionExpression: 'QuizName',
   });
@@ -244,7 +244,6 @@ export async function deleteQuiz(
 
   try {
     const response = await db.send(command);
-    console.log(response);
     return response;
   } catch (error) {
     throw error;

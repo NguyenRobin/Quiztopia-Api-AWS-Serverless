@@ -9,6 +9,8 @@ import { CreateQuiz, Quiz } from '../../../interfaces/quiz';
 import { validateBody } from '../../../middys/validateBody';
 import { createQuiz } from '../../../services/quizTable';
 import { validateToken } from '../../../middys/validateToken';
+import { userIsRegistered } from '../../../services/usersTable';
+import { CloudHSM } from 'aws-sdk';
 
 async function lambda(event: APIGatewayProxyEvent) {
   try {
@@ -26,34 +28,39 @@ async function lambda(event: APIGatewayProxyEvent) {
     }
 
     const token = getToken(event);
-    const tokenOwner = await getTokenOwner(token!);
-    const quizId = randomUUID();
 
-    const newQuiz: Quiz = {
-      pk: quizId,
-      sk: quizName,
-      entityType: 'quiz',
-      quizName,
-      questions,
-      id: quizId,
-      createdAt: generateDate(),
-      creator: tokenOwner.email,
-    };
+    if (token !== undefined) {
+      const { email } = await getTokenOwner(token);
+      const quizId = randomUUID();
 
-    const quizOwner: Quiz = {
-      pk: tokenOwner.email,
-      sk: quizId,
-      entityType: 'quiz',
-      quizName,
-      questions,
-      id: quizId,
-      createdAt: generateDate(),
-      creator: tokenOwner.email,
-    };
+      const newQuiz: Quiz = {
+        pk: quizId,
+        sk: quizName,
+        entityType: 'quiz',
+        quizName,
+        questions,
+        id: quizId,
+        createdAt: generateDate(),
+        creator: email,
+      };
 
-    await createQuiz(newQuiz, quizOwner);
+      const quizOwner: Quiz = {
+        pk: email,
+        sk: quizId,
+        entityType: 'quiz',
+        quizName,
+        questions,
+        id: quizId,
+        createdAt: generateDate(),
+        creator: email,
+      };
 
-    return sendResponse(201, 'Quiz successfully created');
+      if (await userIsRegistered(email)) {
+        await createQuiz(newQuiz, quizOwner);
+
+        return sendResponse(201, 'Quiz successfully created');
+      }
+    }
   } catch (error: any) {
     console.error(error);
     return sendErrorResponse(error);

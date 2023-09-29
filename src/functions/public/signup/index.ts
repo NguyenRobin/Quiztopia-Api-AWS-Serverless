@@ -4,7 +4,6 @@ import { APIGatewayProxyEvent } from 'aws-lambda';
 import { validateBody } from '../../../middys/validateBody';
 import { sendErrorResponse, sendResponse } from '../../../responses';
 import { generateDate } from '../../../utils/generateDate';
-import { validateEmail } from '../../../middys/validateEmail';
 import { SignupRequest, SignupUser } from '../../../interfaces/users';
 import { signupUser } from '../../../services/usersTable';
 

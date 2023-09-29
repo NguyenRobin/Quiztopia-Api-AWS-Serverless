@@ -3,29 +3,28 @@ import jsonBodyParser from '@middy/http-json-body-parser';
 import { APIGatewayProxyEvent } from 'aws-lambda';
 import { validateBody } from '../../../middys/validateBody';
 import { sendErrorResponse, sendResponse } from '../../../responses';
-import { generateDate } from '../../../utils/generateDate';
-import { validateEmail } from '../../../middys/validateEmail';
 import { UserScore } from '../../../interfaces/users';
 import { addScore } from '../../../services/scoreTable';
+import { getQuiz } from '../../../services/quizTable';
 
 async function lambdaHandler(event: APIGatewayProxyEvent) {
   try {
     if (event.body !== null && typeof event.body === 'object') {
-      const { quizId, user, score }: UserScore = event.body;
+      const { quizId, user, score } = event.body as unknown as UserScore;
 
       if (!quizId || !user || !score) {
         throw {
           statusCode: 401,
-          message: 'quizId, user and score is required',
+          message: 'Property: quizId, user and score is required',
         };
       } else {
+        await getQuiz(quizId);
         const userScoreDetails: UserScore = {
           quizId,
           user,
           score,
-          entityType: 'QuizTopScore',
+          entityType: 'quizTopScore',
         };
-        console.log(quizId);
         await addScore(userScoreDetails);
         return sendResponse(201, 'Score successfully created');
       }
