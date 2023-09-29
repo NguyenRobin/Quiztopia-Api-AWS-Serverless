@@ -9,9 +9,10 @@ export const validateCredentials =
       request
     ) => {
       try {
-        const { ...body } = request?.event?.body as unknown as UserCredentials;
+        const { email, password } = request?.event
+          ?.body as unknown as UserCredentials;
 
-        if (!body.email || !body.password) {
+        if (!email || !password) {
           throw {
             statusCode: 400,
             message: 'Email and Password are required.',

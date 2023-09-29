@@ -1,4 +1,5 @@
 import {
+  BatchWriteItemCommand,
   QueryCommand,
   ScanCommand,
   UpdateItemCommand,
@@ -8,11 +9,13 @@ import {
   createAttributeExpression,
   createKeyCondition,
 } from '../functions/authentication/addQuestionToQuiz/helpers';
+import { Quiz } from '../interfaces/quiz';
+import { generateDate } from '../utils/generateDate';
 
-export async function getQuiz(id: any) {
-  const command = new ScanCommand({
+export async function getQuiz(id: string) {
+  const command = new QueryCommand({
     TableName: 'Quiztopia',
-    FilterExpression: 'PK = :PK AND begins_with(SK, :SK)',
+    KeyConditionExpression: 'PK = :PK AND begins_with(SK, :SK)',
     ExpressionAttributeValues: {
       ':PK': { S: 'id#' + id },
       ':SK': { S: 'quiz#' },
@@ -21,6 +24,10 @@ export async function getQuiz(id: any) {
   });
   try {
     const { Items } = await db.send(command);
+
+    if (!Items || !Items?.length) {
+      throw { statusCode: 404, message: 'No quiz with matching ID' };
+    }
 
     const result = Items?.map((quiz) => {
       return {
@@ -44,6 +51,47 @@ export async function getQuiz(id: any) {
   }
 }
 
+export async function getAllQuiz() {
+  const command = new ScanCommand({
+    TableName: 'Quiztopia',
+    FilterExpression: 'begins_with(PK, :PK) and begins_with(SK, :SK)',
+    ExpressionAttributeValues: {
+      ':PK': { S: 'id#' },
+      ':SK': { S: 'quiz#' },
+    },
+  });
+
+  try {
+    const { Items } = await db.send(command);
+    if (!Items) {
+      throw { statusCode: 400, message: 'Bad Request' };
+    }
+
+    const quizTopics = Items?.map((quiz) => {
+      console.log(quiz);
+      return {
+        id: quiz.Id.S,
+        quiz: quiz.QuizName.S,
+        creator: quiz.Creator.S,
+        questions: quiz?.Questions?.L?.map((item) => {
+          return {
+            question: item.M?.Question.S,
+            answer: item.M?.Answer.S,
+            coordinates: {
+              latitude: item.M?.Coordinates?.M?.Latitude?.S,
+              longitude: item.M?.Coordinates?.M?.Longitude?.S,
+            },
+          };
+        }),
+      };
+    });
+
+    return quizTopics;
+  } catch (error) {
+    throw error;
+  }
+}
+
 export async function getQuizName(email: string, quizId: string) {
   const command = new QueryCommand({
     TableName: 'Quiztopia',
@@ -57,6 +105,7 @@ export async function getQuizName(email: string, quizId: string) {
 
   try {
     const { Items } = await db.send(command);
+
     if (!Items || !Items.length) {
       throw {
         statusCode: 401,
@@ -100,6 +149,103 @@ export async function addQuestionToQuiz(
       }
       await db.send(commands[i]);
     }
+  } catch (error) {
+    throw error;
+  }
+}
+
+export async function createQuiz(newQuiz: Quiz, quizOwner: Quiz) {
+  const newQuizItem = {
+    PK: { S: 'id#' + newQuiz.pk },
+    SK: { S: 'quiz#' + newQuiz.quizName },
+    EntityType: { S: 'quiz' },
+    QuizName: { S: newQuiz.quizName },
+    Questions: {
+      L: newQuiz.questions.map((question) => ({
+        M: {
+          Question: { S: question.question },
+          Answer: { S: question.answer },
+          Coordinates: {
+            M: {
+              Latitude: { S: question.coordinates.latitude },
+              Longitude: { S: question.coordinates.longitude },
+            },
+          },
+        },
+      })),
+    },
+    Id: { S: newQuiz.id },
+    CreatedAt: { S: generateDate() },
+    Creator: { S: newQuiz.creator },
+  };
+
+  const newQuizOwner = {
+    PK: { S: 'user#' + quizOwner.pk },
+    SK: { S: 'id#' + quizOwner.id },
+    EntityType: { S: 'quiz' },
+    QuizName: { S: quizOwner.quizName },
+    Questions: {
+      L: quizOwner.questions.map((question) => ({
+        M: {
+          Question: { S: question.question },
+          Answer: { S: question.answer },
+          Coordinates: {
+            M: {
+              Latitude: { S: question.coordinates.latitude },
+              Longitude: { S: question.coordinates.longitude },
+            },
+          },
+        },
+      })),
+    },
+    Id: { S: quizOwner.id },
+    CreatedAt: { S: generateDate() },
+    Creator: { S: quizOwner.creator },
+  };
+  const command = new BatchWriteItemCommand({
+    RequestItems: {
+      Quiztopia: [
+        { PutRequest: { Item: newQuizItem } },
+        { PutRequest: { Item: newQuizOwner } },
+      ],
+    },
+  });
+
+  try {
+    const response = await db.send(command);
+    return response;
+  } catch (error) {
+    console.log(error);
+    throw error;
+  }
+}
+
+export async function deleteQuiz(
+  email: string,
+  quizId: string,
+  quizName: string
+) {
+  const command = new BatchWriteItemCommand({
+    RequestItems: {
+      Quiztopia: [
+        {
+          DeleteRequest: {
+            Key: createKeyCondition('user', email, 'id', quizId),
+          },
+        },
+        {
+          DeleteRequest: {
+            Key: createKeyCondition('id', quizId, 'quiz', quizName),
+          },
+        },
+      ],
+    },
+  });
+
+  try {
+    const response = await db.send(command);
+    console.log(response);
+    return response;
   } catch (error) {
     throw error;
   }

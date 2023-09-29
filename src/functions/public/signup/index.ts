@@ -15,8 +15,8 @@ async function lambdaHandler(event: APIGatewayProxyEvent) {
 
       if (!email || !password) {
         throw {
-          statusCode: 401,
-          message: '"Email" and "Password" is required',
+          statusCode: 400,
+          message: 'Email and Password is required',
         };
       } else {
         const user: SignupUser = {
@@ -28,6 +28,7 @@ async function lambdaHandler(event: APIGatewayProxyEvent) {
           createdAt: generateDate(),
         };
         await signupUser(user);
+
         return sendResponse(201, 'User successfully created');
       }
     }

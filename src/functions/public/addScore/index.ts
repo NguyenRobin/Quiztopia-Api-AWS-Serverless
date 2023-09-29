@@ -16,7 +16,7 @@ async function lambdaHandler(event: APIGatewayProxyEvent) {
       if (!quizId || !user || !score) {
         throw {
           statusCode: 401,
-          message: '"quizId",  "user" and "score" is required',
+          message: 'quizId, user and score is required',
         };
       } else {
         const userScoreDetails: UserScore = {
@@ -25,6 +25,7 @@ async function lambdaHandler(event: APIGatewayProxyEvent) {
           score,
           entityType: 'QuizTopScore',
         };
+        console.log(quizId);
         await addScore(userScoreDetails);
         return sendResponse(201, 'Score successfully created');
       }
